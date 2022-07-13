@@ -10,7 +10,7 @@ volatile static int started = 0;
 void
 main() // kernel 的主程式，啟動核心並載入第一個 init 使用者行程
 {
-  if(cpuid() == 0){  // 第 0 的 hart 用來跑核心
+  if(cpuid() == 0){  // 第 0 個 hart 用來跑核心
     consoleinit();   // 準備好 console
     printfinit();    // 準備好 printf
     printf("\n");

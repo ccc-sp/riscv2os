@@ -55,7 +55,7 @@ usertrap(void) // 使用者中斷 (自陷 trap)
   if(r_scause() == 8){ // 如果是系統呼叫
     // system call
 
-    if(p->killed) // 如果行程已經被殺死
+    if(p->killed) // 如果行程已經被殺死，則呼叫 exit(-1) 離開
       exit(-1);
 
     // sepc points to the ecall instruction,
@@ -69,7 +69,7 @@ usertrap(void) // 使用者中斷 (自陷 trap)
     syscall(); // 執行系統呼叫
   } else if((which_dev = devintr()) != 0){ // 如果是裝置中斷，呼叫 devintr() 處理之。
     // ok
-  } else { // 否則，錯誤處理
+  } else { // 否則為錯誤，設定 p->killed 並結束本行程
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     p->killed = 1;
@@ -100,13 +100,13 @@ usertrapret(void)
 
   // send syscalls, interrupts, and exceptions to trampoline.S
   w_stvec(TRAMPOLINE + (uservec - trampoline)); // 設定中斷向量為 uservec ，這樣才能從 kernel mode 跳回 user mode.
-  // 保存 kernel 的相關暫存器
+  // 保存該行程的 kernel 相關暫存器，以便下次要再進入核心時使用
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.
   p->trapframe->kernel_satp = r_satp();         // kernel page table (核心分頁表)
   p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack (核心堆疊)
-  p->trapframe->kernel_trap = (uint64)usertrap;
-  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
+  p->trapframe->kernel_trap = (uint64)usertrap; // 中斷位址
+  p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid() (核心代號)
 
   // set up the registers that trampoline.S's sret will use
   // to get to user space.
@@ -140,9 +140,9 @@ kerneltrap() // 核心中斷
   uint64 sstatus = r_sstatus();
   uint64 scause = r_scause();
   
-  if((sstatus & SSTATUS_SPP) == 0)
+  if((sstatus & SSTATUS_SPP) == 0) // 只有在特權模式才能引發核心中斷
     panic("kerneltrap: not from supervisor mode");
-  if(intr_get() != 0)
+  if(intr_get() != 0) // 必須在允許中斷的情況下才能引發
     panic("kerneltrap: interrupts enabled");
 
   if((which_dev = devintr()) == 0){ // 1. 裝置中斷

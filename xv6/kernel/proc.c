@@ -443,7 +443,7 @@ void
 scheduler(void)
 {
   struct proc *p;
-  struct cpu *c = mycpu();
+  struct cpu *c = mycpu(); // 取得本核心的處理器資訊
   
   c->proc = 0;
   for(;;){

@@ -33,7 +33,7 @@ uservec:# 進入使用者中斷
         sd sp, 48(a0)
         sd gp, 56(a0)
         sd tp, 64(a0)
-        sd t0, 72(a0)
+        sd t0, 72(a0) # 連臨時暫存器 t0-t6, 參數暫存器 a0-a7 都必須存起來
         sd t1, 80(a0)
         sd t2, 88(a0)
         sd s0, 96(a0)
@@ -136,6 +136,6 @@ userret:# 從使用者中斷返回
 	# restore user a0, and save TRAPFRAME in sscratch
         csrrw a0, sscratch, a0
         
-        # return to user mode and user pc. // sret 會取回 user pc 然後繼續執行該使用者行程
+        # return to user mode and user pc. # sret 會取回 user pc 然後繼續執行該使用者行程
         # usertrapret() set up sstatus and sepc.
         sret
